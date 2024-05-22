@@ -116,7 +116,9 @@ func appendEndPoint(path string, method string, operation *openapi3.Operation) E
 
 	fmt.Println("Operation Name :", operation.OperationID)
 	endPoint.fileName = strings.ToLower(camelToSnake(removeSpecialChars(operation.OperationID)))
+	endPoint.funcName = endPoint.fileName
 	endPoint.endpointParam = getEndpointParam(path)
+	fmt.Println("Endpoint Param :::::: ", endPoint.endpointParam)
 
 	urlPath := getUrlPath(path)
 	endPoint.method = method
@@ -149,22 +151,31 @@ func appendEndPoint(path string, method string, operation *openapi3.Operation) E
 
 	getParams(operation, &endPoint)
 
-	funcName := strings.ToLower(camelToSnake(removeSpecialChars(endPoint.endpointParam)))
-	if endPoint.method == "GET" {
-		funcName = "fetch_" + funcName + "_info"
-	} else if endPoint.method == "PUT" && strings.Split(endPoint.fileName, "_")[0] != "update" {
-		funcName = "update_" + funcName
-		endPoint.fileName = "update_" + strings.Join(strings.Split(endPoint.fileName, "_")[1:], "_")
-	} else if endPoint.method == "POST" && strings.Split(endPoint.fileName, "_")[0] != "create" {
-		funcName = "create_" + funcName
-		endPoint.fileName = "create_" + strings.Join(strings.Split(endPoint.fileName, "_")[1:], "_")
-	} else {
-		funcName = strings.ToLower(endPoint.method) + "_" + funcName
+	//endPoint.funcName = strings.ToLower(camelToSnake(removeSpecialChars(operation.OperationID)))
+	if endPoint.method == "GET" && strings.Split(endPoint.funcName, "_")[0] != "list" {
+		endPoint.funcName = "fetch_" + strings.Join(strings.Split(endPoint.funcName, "_")[1:], "_") + "_info"
+		endPoint.fileName += "s"
+	} else if endPoint.method == "PUT" && strings.Split(endPoint.funcName, "_")[0] != "update" {
+		endPoint.funcName = "update_" + strings.ToLower(camelToSnake(removeSpecialChars(endPoint.endpointParam)))
+		endPoint.fileName = "update_" + strings.Join(strings.Split(endPoint.fileName, "_")[1:], "_") + "s"
+	} else if endPoint.method == "POST" && strings.Split(endPoint.funcName,
+		"_")[len(strings.Split(endPoint.funcName, "_"))-1] != endPoint.endpointParam {
+		if strings.Split(endPoint.funcName, "_")[len(strings.Split(endPoint.funcName, "_"))-1] == "on" {
+			endPoint.funcName = "turn_" + endPoint.funcName
+		} else {
+			endPoint.funcName = "create_" + strings.ToLower(camelToSnake(removeSpecialChars(endPoint.endpointParam)))
+			endPoint.fileName = "create_" + strings.Join(strings.Split(endPoint.fileName, "_")[1:], "_") + "s"
+		}
+	} else if endPoint.method == "DELETE" && endPoint.fileName[len(endPoint.fileName)-1] != 's' {
+		if strings.Split(endPoint.funcName, "_")[len(strings.Split(endPoint.funcName, "_"))-1] == "off" {
+			endPoint.funcName = "turn_" + endPoint.funcName
+		} else {
+			endPoint.fileName += "s"
+		}
 	}
-	if endPoint.method != "LIST" && funcName[len(funcName)-1] == 's' {
-		funcName = funcName[:len(funcName)-1]
+	if endPoint.method != "LIST" && endPoint.funcName[len(endPoint.funcName)-1] == 's' {
+		endPoint.funcName = endPoint.funcName[:len(endPoint.funcName)-1]
 	}
-	endPoint.funcName = funcName
 
 	return endPoint
 }
