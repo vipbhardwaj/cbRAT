@@ -73,7 +73,7 @@ func generateSetupAndTeardown(nomenclature string, superClass string, endPoint E
         self.expected_res = %s
 
         self.log.info("Creating %s")
-        res = self.capellaAPI.cluster_ops_apis.create_%s(
+        res = self.%s.create_%s(
             %s%s
         )
         if res.status_code != %s:
@@ -81,8 +81,8 @@ func generateSetupAndTeardown(nomenclature string, superClass string, endPoint E
             self.tearDown()
             self.fail("Error while creating %s.")
         self.log.info("%s created successfully.")
-`, endPoint.expectedRes, endpoint, temp, params, endPoint.createPayload, endPoint.createResponseCode, endpoint,
-			endpoint)
+`, endPoint.expectedRes, endPoint.api, endpoint, temp, params, endPoint.createPayload, endPoint.createResponseCode,
+			endpoint, endpoint)
 
 		if endPoint.responseIdParam != "" {
 			var endResourceParam = endPoint.parameters[len(endPoint.parameters)-1]
@@ -105,14 +105,14 @@ func generateSetupAndTeardown(nomenclature string, superClass string, endPoint E
 
         # Delete the %s.
         self.log.info("Deleting the %s")
-        res = self.capellaAPI.cluster_ops_apis.delete_%s(
+        res = self.%s.delete_%s(
             self.organisation_id%s)
         if res.status_code != %s:
             self.log.error("Result: {}".format(res.content))
             self.tearDown()
             self.fail("%s deletion failed")
         self.log.info("Successfully deleted the %s.")
-`, endpoint, endpoint, temp, deletionParams, endPoint.deleteResponseCode, endpoint, endpoint)
+`, endpoint, endpoint, endPoint.api, temp, deletionParams, endPoint.deleteResponseCode, endpoint, endpoint)
 	} else if endPoint.method == "LIST" {
 		setUp += `
         self.expected_res = {
@@ -669,19 +669,19 @@ class %s(%s):%s
             self.log.info("Executing test: {}".format(testcase["description"]))
 %s
             if "url" in testcase:
-                self.capellaAPI.cluster_ops_apis.%s = \
+                self.%s.%s = \
                     testcase["url"]
             if "invalid_organizationId" in testcase:
                 organization = testcase["invalid_organizationId"]%s
 
-            result = self.capellaAPI.cluster_ops_apis.%s(
+            result = self.%s.%s(
                 %s%s)
             if result.status_code == 429:
                 self.handle_rate_limit(int(result.headers["Retry-After"]))
-                result = self.capellaAPI.cluster_ops_apis.%s(
+                result = self.%s.%s(
                     %s%s)
 
-            self.capellaAPI.cluster_ops_apis.%s = \
+            self.%s.%s = \
                 "%s"
 
             %sself.validate_testcase(result, %s, testcase, failures%s
@@ -730,12 +730,12 @@ class %s(%s):%s
             header = dict()
             self.auth_test_setup(testcase, failures, header,
                                  self.project_id, other_project_id)
-            result = self.capellaAPI.cluster_ops_apis.%s(
+            result = self.%s.%s(
                 %s%s,
                 header)
             if result.status_code == 429:
                 self.handle_rate_limit(int(result.headers["Retry-After"]))
-                result = self.capellaAPI.cluster_ops_apis.%s(
+                result = self.%s.%s(
                     %s%s,
                     header)
 
@@ -753,14 +753,14 @@ class %s(%s):%s
                 self.log.warning(fail)
             self.fail("{} tests FAILED out of {} TOTAL tests"
                       .format(len(failures), len(testcases)))
-`, formattedDate, commandUsed, user, superClassImport, className, superClass, generateSetupAndTeardown(nomenclature,
-		superClass, endPoint, createParams), v3endpoint, lastParamBad, url, invalidSegment, invalidSegmentError,
-		fetchApiPathTestcasesFromSuperClass(endPoint.parameters), testApiPathParamInitialization, endpointParam,
-		varTestPathParams, endPoint.funcName, apiPathFuncCallParams, payloadParams, endPoint.funcName,
-		apiPathFuncCallParams, payloadParamsIndented, endpointParam, url, ifOrNotForValidation, successCodeArray,
-		getExtraValidationParams(endPoint), authorizedRoles, endPoint.funcName, authParam1, payloadParams,
-		endPoint.funcName, authParam2, payloadParamsIndented, ifOrNotForValidation, successCodeArray,
-		getExtraValidationParams(endPoint))
+`, formattedDate, commandUsed, user, superClassImport, className, superClass, generateSetupAndTeardown(
+		nomenclature, superClass, endPoint, createParams), v3endpoint, lastParamBad, url, invalidSegment,
+		invalidSegmentError, fetchApiPathTestcasesFromSuperClass(endPoint.parameters), testApiPathParamInitialization,
+		endPoint.api, endpointParam, varTestPathParams, endPoint.api, endPoint.funcName, apiPathFuncCallParams,
+		payloadParams, endPoint.api, endPoint.funcName, apiPathFuncCallParams, payloadParamsIndented, endPoint.api,
+		endpointParam, url, ifOrNotForValidation, successCodeArray, getExtraValidationParams(endPoint), authorizedRoles,
+		endPoint.api, endPoint.funcName, authParam1, payloadParams, endPoint.api, endPoint.funcName, authParam2,
+		payloadParamsIndented, ifOrNotForValidation, successCodeArray, getExtraValidationParams(endPoint))
 
 	var strCombinations string
 	var assignTestcase string
@@ -911,11 +911,11 @@ class %s(%s):%s
             else:
                 kwarg = dict()
 
-            result = self.capellaAPI.cluster_ops_apis.%s(%s%s,
+            result = self.%s.%s(%s%s,
                 **kwarg)
             if result.status_code == 429:
                 self.handle_rate_limit(int(result.headers["Retry-After"]))
-                result = self.capellaAPI.cluster_ops_apis.%s(%s%s,
+                result = self.%s.%s(%s%s,
                     **kwarg)
 
             %sself.validate_testcase(result, %s, testcase, failures%s
@@ -926,9 +926,9 @@ class %s(%s):%s
             self.fail("{} tests FAILED out of {} TOTAL tests"
                       .format(len(failures), testcases))
 `, correctQueryParams, correctParamsFormat, createPathComb, correctQueryParams, strCombinations, assignTestcase,
-		outermostIf, firstInnerIf, ifForCreateList, typeCombinations, generateElifsForQueryTests(), endPoint.funcName,
-		testcaseParams1, payloadParams, endPoint.funcName, testcaseParams2, payloadParamsIndented, ifOrNotForValidation,
-		successCodeArray, getExtraValidationParams(endPoint))
+		outermostIf, firstInnerIf, ifForCreateList, typeCombinations, generateElifsForQueryTests(), endPoint.api,
+		endPoint.funcName, testcaseParams1, payloadParams, endPoint.api, endPoint.funcName, testcaseParams2,
+		payloadParamsIndented, ifOrNotForValidation, successCodeArray, getExtraValidationParams(endPoint))
 
 	var rateLimitParams string
 	for i, param := range authorizationFuncCallParams {
@@ -956,7 +956,7 @@ class %s(%s):%s
     def test_multiple_requests_using_API_keys_with_same_role_which_has_access(
             self):
         api_func_list = [[
-            self.capellaAPI.cluster_ops_apis.%s, (
+            self.%s.%s, (
                 %s%s
             )
         ]]
@@ -964,12 +964,13 @@ class %s(%s):%s
 
     def test_multiple_requests_using_API_keys_with_diff_role(self):
         api_func_list = [[
-            self.capellaAPI.cluster_ops_apis.%s, (
+            self.%s.%s, (
                 %s%s
             )
         ]]
         self.throttle_test(api_func_list, True, self.project_id)
-`, endPoint.funcName, rateLimitParams, payloadParams, endPoint.funcName, rateLimitParams, payloadParams)
+`, endPoint.api, endPoint.funcName, rateLimitParams, payloadParams, endPoint.api, endPoint.funcName, rateLimitParams,
+		payloadParams)
 
 	//strings.ReplaceAll(code, "\t", "    ")
 	_, err = f.WriteString(code)

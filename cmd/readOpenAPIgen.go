@@ -11,6 +11,7 @@ import (
 
 type Endpoint struct {
 	url                string
+	api                string
 	description        string
 	method             string
 	parameters         []string
@@ -113,6 +114,14 @@ func appendEndPoint(path string, method string, operation *openapi3.Operation) E
 	var endPoint Endpoint
 
 	endPoint.description = operation.Description
+
+	endPoint.api = "capellaAPI.cluster_ops_apis"
+	for _, e := range strings.Split(path, "/") {
+		if e == "analyticsClusters" {
+			endPoint.api = "columnarAPI"
+			break
+		}
+	}
 
 	fmt.Println("Operation Name :", operation.OperationID)
 	endPoint.fileName = strings.ToLower(camelToSnake(removeSpecialChars(operation.OperationID)))

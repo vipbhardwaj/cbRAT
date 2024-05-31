@@ -43,7 +43,9 @@ func generatePythonModule(
 		}
 		resourceParam = strings.ToLower(endpoint) + "_id"
 		className = toCamelCase(endPoint.method) + firstToUpper(endPoint.endpointParam)
-		className = className[:len(className)-1]
+		//if className[len(className)-1] == 's' {
+		//	className = className[:len(className)-1]
+		//}
 		endpointParam := strings.ToLower(camelToSnake(removeSpecialChars(endPoint.endpointParam))) + "_endpoint"
 
 		if endPoint.method == "GET" {
