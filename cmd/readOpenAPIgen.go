@@ -35,6 +35,8 @@ type ResponseDescription struct {
 }
 
 var pythonRoleToGoRoleMapper = map[string]string{
+	"Organization Member":         "organizationMember",
+	"Project Creator":             "projectCreator",
 	"Organization Owner":          "organizationOwner",
 	"Project Owner":               "projectOwner",
 	"Project Manager":             "projectManager",
