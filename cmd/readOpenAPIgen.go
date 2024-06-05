@@ -104,9 +104,8 @@ func getEndpoints(spec *openapi3.T, tagString string) []Endpoint {
 			}
 			return endPoints[i].method < endPoints[j].method
 		})
+		attachExpectedResToGet(endPoints)
 	}
-
-	attachExpectedResToGet(endPoints)
 	return endPoints
 }
 
@@ -163,17 +162,17 @@ func appendEndPoint(path string, method string, operation *openapi3.Operation) E
 	//endPoint.funcName = strings.ToLower(camelToSnake(removeSpecialChars(operation.OperationID)))
 	if endPoint.method == "GET" && strings.Split(endPoint.funcName, "_")[0] != "list" {
 		endPoint.funcName = "fetch_" + strings.Join(strings.Split(endPoint.funcName, "_")[1:], "_") + "_info"
-		endPoint.fileName += "s"
 	} else if endPoint.method == "PUT" && strings.Split(endPoint.funcName, "_")[0] != "update" {
 		endPoint.funcName = "update_" + strings.ToLower(camelToSnake(removeSpecialChars(endPoint.endpointParam)))
 		endPoint.fileName = "update_" + strings.Join(strings.Split(endPoint.fileName, "_")[1:], "_") + "s"
-	} else if endPoint.method == "POST" && strings.Split(endPoint.funcName,
-		"_")[len(strings.Split(endPoint.funcName, "_"))-1] != endPoint.endpointParam {
-		if strings.Split(endPoint.funcName, "_")[len(strings.Split(endPoint.funcName, "_"))-1] == "on" {
-			endPoint.funcName = "turn_" + endPoint.funcName
-		} else {
+	} else if endPoint.method == "POST" {
+		if strings.Split(endPoint.fileName, "_")[0] == "post" {
 			endPoint.funcName = "create_" + strings.ToLower(camelToSnake(removeSpecialChars(endPoint.endpointParam)))
 			endPoint.fileName = "create_" + strings.Join(strings.Split(endPoint.fileName, "_")[1:], "_") + "s"
+		} else {
+			if strings.Split(endPoint.funcName, "_")[len(strings.Split(endPoint.funcName, "_"))-1] == "on" {
+				endPoint.funcName = "turn_" + endPoint.funcName
+			}
 		}
 	} else if endPoint.method == "DELETE" && endPoint.fileName[len(endPoint.fileName)-1] != 's' {
 		if strings.Split(endPoint.funcName, "_")[len(strings.Split(endPoint.funcName, "_"))-1] == "off" {
@@ -184,6 +183,9 @@ func appendEndPoint(path string, method string, operation *openapi3.Operation) E
 	}
 	if endPoint.method != "LIST" && endPoint.funcName[len(endPoint.funcName)-1] == 's' {
 		endPoint.funcName = endPoint.funcName[:len(endPoint.funcName)-1]
+	}
+	if endPoint.fileName[len(endPoint.fileName)-1] != 's' {
+		endPoint.fileName += "s"
 	}
 
 	return endPoint
