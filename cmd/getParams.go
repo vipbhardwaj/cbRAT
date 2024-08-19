@@ -63,6 +63,7 @@ func getParams(operation *openapi3.Operation, endpoint *Endpoint) {
 		fmt.Println("Expected Results - ")
 		if len(response.Value.Content["application/json"].Examples) > 0 {
 			for _, example := range response.Value.Content["application/json"].Examples {
+				fmt.Println(example.Value)
 				if example.Value.Value == nil {
 					continue
 				}

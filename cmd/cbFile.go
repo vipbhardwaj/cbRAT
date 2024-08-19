@@ -81,7 +81,7 @@ func generateSetupAndTeardown(nomenclature string, superClass string, endPoint E
             self.tearDown()
             self.fail("Error while creating %s.")
         self.log.info("%s created successfully.")
-`, endPoint.expectedRes, endPoint.api, endpoint, temp, params, endPoint.createPayload, endPoint.createResponseCode,
+`, endPoint.expectedRes, endpoint, endPoint.api, temp, params, endPoint.createPayload, endPoint.createResponseCode,
 			endpoint, endpoint)
 
 		if endPoint.responseIdParam != "" {
@@ -91,7 +91,7 @@ func generateSetupAndTeardown(nomenclature string, superClass string, endPoint E
         self.%s = res.json()["%s"]
         self.expected_res["%s"] = self.%s
         ##################################################
-        # Set Parameters for the alert to be validated in the get req
+        # Set Parameters for the expected res to be validated in GET
         ##################################################
 `, endResourceParam, endPoint.responseIdParam, endPoint.expectedIdParam, endResourceParam)
 		}

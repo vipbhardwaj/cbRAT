@@ -18,6 +18,7 @@ func attachExpectedResToGet(endpoints []Endpoint) {
 	reverseSlice(endpoints)
 	for i, endPoint := range endpoints {
 		if endPoint.expectedRes != "" && endPoint.method != "GET" {
+			fmt.Println("attaching from", endPoint.funcName)
 			attachToGet(endpoints, endPoint)
 			endpoints[i].expectedRes = ""
 		}

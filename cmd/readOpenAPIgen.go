@@ -155,7 +155,7 @@ func appendEndPoint(path string, method string, operation *openapi3.Operation) E
 	//yamlStr := readFile(filePath, method, operation.OperationID)
 	//if len(yamlStr) != 0 {
 	//	endPoint.expectedRes = prettifyJSON(getExpectedRes(yamlStr))
-	//}`
+	//}
 
 	////////////////////////////////
 
