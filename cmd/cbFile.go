@@ -591,12 +591,12 @@ func generatePythonFile(
 	var createParams string
 	var authParam1 string
 	var authParam2 string
-	var authorizedRoles = "\n                "
+	var authorizedRoles = "\n            "
 	for i, role := range endPoint.authorizedRoles {
 		if i > 0 && i < len(authorizedRoles)-1 {
 			authorizedRoles += ","
 			if i%3 == 0 {
-				authorizedRoles += "\n                "
+				authorizedRoles += "\n            "
 			}
 		}
 		authorizedRoles += " \"" + role + "\""
@@ -663,7 +663,6 @@ class %s(%s):%s
                 "url": "%s%s",
 %s
 %s
-
         failures = list()
         for testcase in testcases:
             self.log.info("Executing test: {}".format(testcase["description"]))
@@ -680,10 +679,8 @@ class %s(%s):%s
                 self.handle_rate_limit(int(result.headers["Retry-After"]))
                 result = self.%s.%s(
                     %s%s)
-
             self.%s.%s = \
                 "%s"
-
             %sself.validate_testcase(result, %s, testcase, failures%s
 
         if failures:
@@ -694,8 +691,7 @@ class %s(%s):%s
 
     def test_authorization(self):
         failures = list()
-        for testcase in self.v4_RBAC_injection_init([
-            %s
+        for testcase in self.v4_RBAC_injection_init([%s
         ]):
             self.log.info("Executing test: {}".format(testcase["description"]))
             header = dict()
@@ -709,14 +705,12 @@ class %s(%s):%s
                 result = self.%s.%s(
                     %s%s,
                     header)
-
             %sself.validate_testcase(result, %s, testcase, failures%s
 
         if failures:
             for fail in failures:
                 self.log.warning(fail)
-            self.fail("{} tests FAILED out of {} TOTAL tests"
-                      .format(len(failures), len(testcases)))
+            self.fail("{} tests FAILED.".format(len(failures)))
 `, formattedDate, commandUsed, user, superClassImport, className, superClass, generateSetupAndTeardown(
 		nomenclature, superClass, endPoint, createParams), v3endpoint, lastParamBad, url, invalidSegment,
 		invalidSegmentError, fetchApiPathTestcasesFromSuperClass(endPoint.parameters), testApiPathParamInitialization,
@@ -881,7 +875,6 @@ class %s(%s):%s
                 self.handle_rate_limit(int(result.headers["Retry-After"]))
                 result = self.%s.%s(%s%s,
                     **kwarg)
-
             %sself.validate_testcase(result, %s, testcase, failures%s
 
         if failures:
@@ -891,8 +884,54 @@ class %s(%s):%s
                       .format(len(failures), testcases))
 `, correctQueryParams, correctParamsFormat, createPathComb, correctQueryParams, strCombinations, assignTestcase,
 		outermostIf, firstInnerIf, ifForCreateList, typeCombinations, generateElifsForQueryTests(), endPoint.api,
-		endPoint.funcName, testcaseParams1, payloadParams, endPoint.api, endPoint.funcName, testcaseParams2,
+		endPoint.funcName, authParam1, payloadParams, endPoint.api, endPoint.funcName, authParam2,
 		payloadParamsIndented, ifOrNotForValidation, successCodeArray, getExtraValidationParams(endPoint))
+
+	backtick := "`"
+	payloadTestCode := fmt.Sprintf(`
+        def test_payload(self):
+        testcases = list()
+        for k in self.expected_res:
+            if k in []:
+                continue
+
+            for v in [
+                "", 1, 0, 100000, -1, 123.123, None, [], {},
+                self.generate_random_string(special_characters=False),
+                self.generate_random_string(500, special_characters=False),
+            ]:
+                testcase = copy.deepcopy(self.expected_res)
+                testcase[k] = v
+                for param in []:
+                    del testcase[param]
+                testcase["description"] = "Testing %s{}%s with val: %s{}%s of {}"\
+                    .format(k, v, type(v))
+                # Add expected failure codes for malformed payload values...
+                testcases.append(testcase)
+
+        failures = list()
+        for testcase in testcases:
+            self.log.info(testcase['description'])
+            result = self.%s.%s(
+                %s%s)
+            if result.status_code == 429:
+                self.handle_rate_limit(int(result.headers["Retry-After"]))
+                result = self.%s.%s(
+                    %s%s)
+            %sself.validate_testcase(result, %s, testcase, failures%s
+
+        if failures:
+            for fail in failures:
+                self.log.warning(fail)
+            self.fail("{} tests FAILED out of {} TOTAL tests"
+                      .format(len(failures), len(testcases)))
+`, backtick, backtick, backtick, backtick, endPoint.api, endPoint.funcName, testcaseParams1, payloadParams,
+		endPoint.api, endPoint.funcName, testcaseParams2, payloadParamsIndented, ifOrNotForValidation, successCodeArray,
+		getExtraValidationParams(endPoint))
+
+	if endPoint.method == "POST" || endPoint.method == "PUT" {
+		code += payloadTestCode
+	}
 
 	var rateLimitParams string
 	for i, param := range authorizationFuncCallParams {

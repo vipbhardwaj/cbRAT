@@ -114,7 +114,7 @@ func getEndpoints(spec *openapi3.T, tagString string) []Endpoint {
 func appendEndPoint(path string, method string, operation *openapi3.Operation) Endpoint {
 	var endPoint Endpoint
 
-	endPoint.description = operation.Description
+	//endPoint.description = operation.Description
 
 	endPoint.api = "capellaAPI.cluster_ops_apis"
 	for _, e := range strings.Split(path, "/") {
@@ -140,7 +140,7 @@ func appendEndPoint(path string, method string, operation *openapi3.Operation) E
 	endPoint.parameters = parameters
 
 	// Get Authorized Roles
-	authorizedRoles := getAuthorizedRolesForAPI(operation)
+	authorizedRoles := getAuthorizedRolesForAPI(operation, endPoint)
 	endPoint.authorizedRoles = authorizedRoles
 
 	/////////// DEPRECATED /////////
@@ -228,10 +228,11 @@ func getApiParameters(path string) []string {
 	return parameters
 }
 
-func getAuthorizedRolesForAPI(op *openapi3.Operation) []string {
+func getAuthorizedRolesForAPI(op *openapi3.Operation, endpoint Endpoint) []string {
 	var authorizedRoles []string
 	desc := op.Description
 	lines := strings.Split(desc, "\n")
+	attachDescription(endpoint, lines)
 	for _, line := range lines {
 		if len(line) == 0 || strings.TrimSpace(line)[0] != '-' {
 			continue
@@ -240,6 +241,15 @@ func getAuthorizedRolesForAPI(op *openapi3.Operation) []string {
 		authorizedRoles = append(authorizedRoles, pythonRoleToGoRoleMapper[role])
 	}
 	return authorizedRoles
+}
+
+func attachDescription(endpoint Endpoint, lines []string) {
+	for _, line := range lines {
+		if len(line) >= 6 && string(line[len(line)-7:]) == "html)." {
+			return
+		}
+		endpoint.description += "            " + line + "\n"
+	}
 }
 
 func getEndpointParam(path string) string {

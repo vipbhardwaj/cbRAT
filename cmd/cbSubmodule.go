@@ -78,74 +78,88 @@ cbSubmodule --tag "Clusters"`,
 func appendPythonSubModule(endpoints []Endpoint) error {
 	var endpointUrlMap = make(map[string]string)
 	var code string
-	//var endpointCode string
 	for _, endPoint := range endpoints {
 		key := strings.Split(endPoint.url, "/")[len(strings.Split(endPoint.url, "/"))-1]
 		url := "self." + key + "_endpoint"
 		endpointUrlMap[key] = "self." + key + "_endpoint = \"" + endPoint.url + "\""
 		fmt.Println(endPoint.url)
 
-		var args string
-		for _, arg := range endPoint.payloadParameters {
-			args += "\n            " + arg + ","
+		args := "\n            self,"
+		var argsDesc string
+		var paramsAssignment = "params = {"
+		var endpointCallString string
+		for i, arg := range endPoint.parameters {
+			args += "\n        " + arg + ","
+			argsDesc += "        " + arg + ": "
+			switch arg {
+			case "organizationId":
+				argsDesc += "The tenant ID for the path. (UUID)\n"
+			case "projectId":
+				argsDesc += "ID of the project inside the tenant. (UUID)\n"
+			case "clusterId":
+				argsDesc += "ID of the cluster which has the app service inside it. (UUID)\n"
+			case "appServiceId":
+				argsDesc += "ID of the app service linked to the cluster. (UUID)\n"
+			case "bucketId":
+				argsDesc += "ID of the bucket inside the cluster. (string)\n"
+			default:
+				argsDesc += "\n"
+			}
+			if i > 0 {
+				endpointCallString += ", "
+			}
+			endpointCallString += arg
 		}
-		args += "\n            headers=None,\n            **kwargs"
-
-		var paramsAssignment = "        params = {"
+		//for _, arg := range endPoint.payloadParameters {
+		//	args += "\n            " + arg + ","
+		//}
 		for _, param := range endPoint.requiredParameters {
 			paramsAssignment += "\n            \"" + param + "\": " + param + ","
+			args += "\n        " + param + ","
+			argsDesc += "        " + param + ": \n"
+			endpointCallString += ", " + param
 		}
+		args += "\n        headers=None,\n        **kwargs"
+		argsDesc += "        headers: \n        **kwargs: \n"
 		paramsAssignment += "\n        }"
 
 		var params = "                \n"
 		var paramsString = "\""
 		var kwargs string
-		var requestString string
-		var endpointCallString string
-		for i, param := range endPoint.parameters {
-			if i > 0 {
-				endpointCallString += ", "
-			}
-			endpointCallString += param
+		if len(endPoint.requiredParameters) > 0 {
+			kwargs = `for k, v in kwargs.items():
+        params[k] = v`
+		} else {
+			paramsAssignment = ""
+			kwargs = `if kwargs:
+        params = kwargs
+    else:
+        params = None`
 		}
+
+		var requestString string
 		if endPoint.method == "POST" {
-			params += "name"
-			endpointCallString += "name, "
 			paramsString += "Creating a " + endPoint.parameters[len(endPoint.parameters)-1][:len(endPoint.
 				parameters[len(endPoint.parameters)-1])-2]
-			kwargs = `for k, v in kwargs.items():
-            params[k] = v`
-			requestString += "resp = self.capella_api_" + strings.ToLower(endPoint.method) + "(" + url + ".format(" +
+			requestString += "resp = self.api_" + strings.ToLower(endPoint.method) + "(" + url + ".format(" +
 				endpointCallString
 		} else if endPoint.method == "PUT" {
 			paramsString += "Updating the " + endPoint.parameters[len(endPoint.parameters)-1][:len(endPoint.
 				parameters[len(endPoint.parameters)-1])-2]
-			kwargs = `for k, v in kwargs.items():
-            params[k] = v`
-			requestString += "resp = self.capella_api_" + strings.ToLower(endPoint.method) + "(\"{}/{}\".format(" +
+			requestString += "resp = self.api_" + strings.ToLower(endPoint.method) + "(\"{}/{}\".format(" +
 				url + ".format(" + endpointCallString
 		} else if endPoint.method == "GET" {
 			paramsString += "Fetching the " + endPoint.parameters[len(endPoint.parameters)-1][:len(endPoint.
 				parameters[len(endPoint.parameters)-1])-2]
-			kwargs = `if kwargs:
-            params = kwargs
-        else:
-            params = None`
-			requestString += "resp = self.capella_api_" + strings.ToLower(endPoint.method) + "(\"{}/{}\".format(" +
+			requestString += "resp = self.api_" + strings.ToLower(endPoint.method) + "(\"{}/{}\".format(" +
 				url + ".format(" + endpointCallString
 		} else if endPoint.method == "DELETE" {
 			paramsString += "Deleting the " + endPoint.parameters[len(endPoint.parameters)-1][:len(endPoint.
 				parameters[len(endPoint.parameters)-1])-2]
-			kwargs = `if kwargs:
-            params = kwargs
-        else:
-            params = None`
-			requestString += "resp = self.capella_api_del(\"{}/{}\".format(" + url + ".format(" + endpointCallString
+			requestString += "resp = self.api_del(\"{}/{}\".format(" + url + ".format(" + endpointCallString
 		} else if endPoint.method == "LIST" {
 			paramsString += "Listing all the " + key + "s" + endpointCallString
-			kwargs = `for k, v in kwargs.items():
-            params[k] = v`
-			requestString += "resp = self.capella_api_" + strings.ToLower(endPoint.method) + "(" + url + ".format(" +
+			requestString += "resp = self.api_get(" + url + ".format(" +
 				endpointCallString
 		}
 		requestString += "), params, headers)\n        return resp"
@@ -157,20 +171,27 @@ func appendPythonSubModule(endpoints []Endpoint) error {
 			params += endPoint.parameters[i]
 			paramsString += " in " + endPoint.parameters[i][:len(endPoint.parameters[i])-2] + " {}"
 		}
-		code += fmt.Sprintf(`
-        """
-        %s
-        """    def %s(%s):`, endPoint.description, endPoint.funcName, args)
-		code += fmt.Sprintf(`
-        self.cluster_ops_API_log.info(%s.format(%s))
-        %s
-        %s
 
-        %s
+		code += fmt.Sprintf(`
+    def %s(%s):
+    """
+%s
 
-        %s`, paramsString, params, paramsAssignment,
+    Args:
+%s
+    Returns:
+        Success : Status Code and response (JSON).
+        Error : message, hint, code, HttpStatusCode
+    """`, endPoint.funcName, args, endPoint.description, argsDesc)
+		code += fmt.Sprintf(`
+    self.cluster_ops_API_log.info(%s".format(%s))
+    %s
+    %s
+
+    %s`, paramsString, params, paramsAssignment,
 			//optionalParams,
 			kwargs, requestString)
 	}
+	fmt.Printf("Please copy and paste the following:\n```\n" + code + "\n```")
 	return nil
 }

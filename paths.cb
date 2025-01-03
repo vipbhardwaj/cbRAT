@@ -1,6 +1,6 @@
+submodulePath:
 confDir:../../../TAF/conf/capella/
 smokeUpgradeDir:../../couchbase-cloud/cmd/cp-cli/scenarios/hdbaas/
 modulePath:../../../TAF/pytests/Capella/RestAPIv4/
-scriptDir:../../../TAF/pytests/Capella/RestAPIv4/Clusters/
+scriptDir:../../../TAF/pytests/Capella/RestAPIv4/AppEndpoints/
 readPath:../openapi.generated.yaml
-submodulePath:

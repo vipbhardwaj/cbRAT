@@ -13,20 +13,28 @@ func getParams(operation *openapi3.Operation, endpoint *Endpoint) {
 	// Request information
 	if requestBody := operation.RequestBody; requestBody != nil {
 		fmt.Println("Request Body - ")
-		for name, example := range operation.RequestBody.Value.Content["application/json"].Examples {
-			if example.Value.Value == nil {
-				continue
+		if operation.RequestBody.Value.Content["application/json"] == nil {
+			fmt.Printf("%+v\n", operation.RequestBody.Value.Content["application/javascript"].Schema.Value.Example)
+			jsonString, _ := json.Marshal(operation.RequestBody.Value.Content["application/javascript"].Schema.
+				Value.Example)
+			endpoint.expectedRes = prettifyJSON("{" + "payload:" + string(jsonString))
+			endpoint.requiredParameters = []string{"payload"}
+		} else {
+			for name, example := range operation.RequestBody.Value.Content["application/json"].Examples {
+				if example.Value.Value == nil {
+					continue
+				}
+				fmt.Println("\tName :", name)
+				jsonString, _ := json.Marshal(example.Value.Value)
+				jsonParsedString := prettifyJSON(string(jsonString))
+				//fmt.Println("\tExample :", jsonParsedString)
+				endpoint.expectedRes = jsonParsedString
 			}
-			fmt.Println("\tName :", name)
-			jsonString, _ := json.Marshal(example.Value.Value)
-			jsonParsedString := prettifyJSON(string(jsonString))
-			//fmt.Println("\tExample :", jsonParsedString)
-			endpoint.expectedRes = jsonParsedString
-		}
-		fmt.Println("Payload Params - ")
-		fmt.Println(requestBody.Value.Content["application/json"].Schema.Value.Properties)
-		for _, param := range requestBody.Value.Content["application/json"].Schema.Value.Required {
-			endpoint.requiredParameters = append(endpoint.requiredParameters, param)
+			fmt.Println("Payload Params - ")
+			fmt.Println(requestBody.Value.Content["application/json"].Schema.Value.Properties)
+			for _, param := range requestBody.Value.Content["application/json"].Schema.Value.Required {
+				endpoint.requiredParameters = append(endpoint.requiredParameters, param)
+			}
 		}
 	}
 	if parameters := operation.Parameters; parameters != nil {
