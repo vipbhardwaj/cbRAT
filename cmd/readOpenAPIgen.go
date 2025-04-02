@@ -114,7 +114,7 @@ func getEndpoints(spec *openapi3.T, tagString string) []Endpoint {
 func appendEndPoint(path string, method string, operation *openapi3.Operation) Endpoint {
 	var endPoint Endpoint
 
-	//endPoint.description = operation.Description
+	endPoint.description = descTrimmer(operation.Description)
 
 	endPoint.api = "capellaAPI.cluster_ops_apis"
 	for _, e := range strings.Split(path, "/") {
@@ -191,6 +191,18 @@ func appendEndPoint(path string, method string, operation *openapi3.Operation) E
 	}
 
 	return endPoint
+}
+
+func descTrimmer(fullDesc string) string {
+	var infoString strings.Builder
+	for _, line := range strings.Split(fullDesc, "\n") {
+		if line == "In order to access this endpoint, "+
+			"the provided API key must have at least one of the roles referenced below:" {
+			break
+		}
+		infoString.WriteString(line)
+	}
+	return infoString.String()
 }
 
 func getUrlPath(path string) string {

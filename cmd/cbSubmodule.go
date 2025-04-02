@@ -84,12 +84,14 @@ func appendPythonSubModule(endpoints []Endpoint) error {
 		endpointUrlMap[key] = "self." + key + "_endpoint = \"" + endPoint.url + "\""
 		fmt.Println(endPoint.url)
 
-		args := "\n            self,"
+		args := "\n            self"
 		var argsDesc string
 		var paramsAssignment = "params = {"
 		var endpointCallString string
-		for i, arg := range endPoint.parameters {
-			args += "\n        " + arg + ","
+		for i, arg := range append(
+			append(endPoint.parameters,
+				endPoint.requiredParameters...), []string{"headers", "**kwargs"}...) {
+			args += ",\n        " + arg
 			argsDesc += "        " + arg + ": "
 			switch arg {
 			case "organizationId":
@@ -102,25 +104,35 @@ func appendPythonSubModule(endpoints []Endpoint) error {
 				argsDesc += "ID of the app service linked to the cluster. (UUID)\n"
 			case "bucketId":
 				argsDesc += "ID of the bucket inside the cluster. (string)\n"
+			case "payload":
+				argsDesc += "Payload string coming into `params`. (string)\n"
+			case "headers":
+				args += "=None"
+				argsDesc += "Headers to be sent with the API call. (dict)\n"
+			case "**kwargs":
+				argsDesc += "Do not use this under normal circumstances. This is only to test negative scenarios. " +
+					"(dict)\n"
 			default:
 				argsDesc += "\n"
 			}
-			if i > 0 {
-				endpointCallString += ", "
+			if i < len(endPoint.parameters) {
+				if i > 0 {
+					endpointCallString += ", "
+				}
+				endpointCallString += arg
 			}
-			endpointCallString += arg
 		}
 		//for _, arg := range endPoint.payloadParameters {
 		//	args += "\n            " + arg + ","
 		//}
 		for _, param := range endPoint.requiredParameters {
 			paramsAssignment += "\n            \"" + param + "\": " + param + ","
-			args += "\n        " + param + ","
-			argsDesc += "        " + param + ": \n"
-			endpointCallString += ", " + param
+			//args += "\n        " + param + ","
+			//argsDesc += "        " + param + ": \n"
+			//endpointCallString += ", " + param
 		}
-		args += "\n        headers=None,\n        **kwargs"
-		argsDesc += "        headers: \n        **kwargs: \n"
+		//args += "\n        headers=None,\n        **kwargs"
+		//argsDesc += "        headers: Headers to be sent with the API call. (dict)\n        **kwargs: \n"
 		paramsAssignment += "\n        }"
 
 		var params = "                \n"

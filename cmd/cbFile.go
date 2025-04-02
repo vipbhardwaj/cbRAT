@@ -706,7 +706,6 @@ class %s(%s):%s
                     %s%s,
                     header)
             %sself.validate_testcase(result, %s, testcase, failures%s
-
         if failures:
             for fail in failures:
                 self.log.warning(fail)
@@ -876,7 +875,6 @@ class %s(%s):%s
                 result = self.%s.%s(%s%s,
                     **kwarg)
             %sself.validate_testcase(result, %s, testcase, failures%s
-
         if failures:
             for fail in failures:
                 self.log.warning(fail)
@@ -904,22 +902,22 @@ class %s(%s):%s
                 testcase[k] = v
                 for param in []:
                     del testcase[param]
-                testcase["description"] = "Testing %s{}%s with val: %s{}%s of {}"\
+                testcase["desc"] = "Testing %s{}%s with val: %s{}%s of {}"\
                     .format(k, v, type(v))
                 # Add expected failure codes for malformed payload values...
                 testcases.append(testcase)
 
         failures = list()
         for testcase in testcases:
-            self.log.info(testcase['description'])
+            self.log.info(testcase['desc'])
             result = self.%s.%s(
                 %s%s)
             if result.status_code == 429:
                 self.handle_rate_limit(int(result.headers["Retry-After"]))
                 result = self.%s.%s(
                     %s%s)
-            %sself.validate_testcase(result, %s, testcase, failures%s
-
+            %sself.validate_testcase(result, %s, testcase, failures,
+                                   payloadTest=True%s
         if failures:
             for fail in failures:
                 self.log.warning(fail)
